@@ -2,3 +2,6 @@ fastapi
 uvicorn
 gunicorn
 itsdangerous
+python-multipart
+
+
