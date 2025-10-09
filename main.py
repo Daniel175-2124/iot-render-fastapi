@@ -26,7 +26,7 @@ def create_token(username: str):
 
 def verify_token(token: str):
     try:
-        data = serializer.loads(token, max_age=86400)  # 24h timeout
+        data = serializer.loads(token, max_age=600)  # 10min timeout
         return data.get("user")
     except (BadSignature, SignatureExpired):
         return None
