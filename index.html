@@ -2,33 +2,57 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Điều khiển I/O</title>
   <style>
-    body { text-align: center; font-family: sans-serif; margin-top: 50px; }
-    button {
-      font-size: 24px;
-      padding: 15px 30px;
-      margin: 10px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
+    body {
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background: #f8f9fa;
     }
-    .mo { background-color: #4CAF50; color: white; }
-    .dung { background-color: #ff9800; color: white; }
-    .dong { background-color: #f44336; color: white; }
+    h1 {
+      color: #333;
+      margin-bottom: 40px;
+    }
+    button {
+      width: 80%;
+      max-width: 300px;
+      padding: 20px;
+      margin: 15px 0;
+      font-size: 22px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      background-color: #007bff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover {
+      background-color: #0056b3;
+      transform: scale(1.05);
+    }
+    .close { background-color: #28a745; }
+    .stop { background-color: #ffc107; color: #222; }
+    .open { background-color: #dc3545; }
   </style>
 </head>
 <body>
-  <h2>🛰️ Điều khiển thiết bị ESP8266</h2>
-  <button class="mo" onclick="send('mo')">Mở</button>
-  <button class="dung" onclick="send('dung')">Dừng</button>
-  <button class="dong" onclick="send('dong')">Đóng</button>
+  <h1>Điều khiển</h1>
+  <button class="open" onclick="sendCmd('MO')">MỞ</button>
+  <button class="stop" onclick="sendCmd('DUNG')">DỪNG</button>
+  <button class="close" onclick="sendCmd('DONG')">ĐÓNG</button>
 
   <script>
-    async function send(cmd) {
-      const res = await fetch(`/action/${cmd}`, { method: 'POST' });
+    async function sendCmd(cmd) {
+      const res = await fetch(`/action/${cmd}`, {method:'POST'});
       const data = await res.json();
-      alert(`Đã gửi lệnh: ${data.command}`);
+      alert("Đã gửi lệnh: " + cmd);
     }
   </script>
 </body>
