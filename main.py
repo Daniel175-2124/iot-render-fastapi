@@ -4,6 +4,7 @@ from fastapi import FastAPI, Request, Form, Response, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from itsdangerous import URLSafeSerializer
+from fastapi.responses import RedirectResponse
 
 # --- config ---
 APP_USER = os.environ.get("WEB_USER", "admin")
@@ -22,15 +23,15 @@ last_command = None
 def get_current_user(request: Request):
     cookie = request.cookies.get(COOKIE_NAME)
     if not cookie:
-        raise HTTPException(status_code=401, detail="Not authenticated")
+        return RedirectResponse(url="/login", status_code=303)
     try:
         data = serializer.loads(cookie)
         username = data.get("user")
         if username != APP_USER:
-            raise HTTPException(status_code=401, detail="Invalid user")
+            return RedirectResponse(url="/login", status_code=303)
         return username
     except Exception:
-        raise HTTPException(status_code=401, detail="Invalid session")
+        return RedirectResponse(url="/login", status_code=303)
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page():
