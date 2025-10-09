@@ -1,38 +1,49 @@
 import os
 import json
+from datetime import timedelta, datetime
 from fastapi import FastAPI, Request, Form, Response, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from itsdangerous import URLSafeSerializer
-from fastapi.responses import RedirectResponse
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
-# --- config ---
+# --- CONFIG ---
 APP_USER = os.environ.get("WEB_USER", "admin")
 APP_PASS = os.environ.get("WEB_PASS", "changeme")
 SECRET = os.environ.get("SECRET_KEY", "please-change-this")
 COOKIE_NAME = "session"
 
-serializer = URLSafeSerializer(SECRET, salt="session-salt")
-
+# --- Init App ---
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
-
-# in-memory last command (simple)
+serializer = URLSafeTimedSerializer(SECRET, salt="session-salt")
 last_command = None
 
+
+# --- Helpers ---
+def create_token(username: str):
+    return serializer.dumps({"user": username, "time": datetime.utcnow().isoformat()})
+
+
+def verify_token(token: str):
+    try:
+        data = serializer.loads(token, max_age=86400)  # 24h timeout
+        return data.get("user")
+    except (BadSignature, SignatureExpired):
+        return None
+
+
+# --- Dependencies ---
 def get_current_user(request: Request):
     cookie = request.cookies.get(COOKIE_NAME)
     if not cookie:
-        return RedirectResponse(url="/login", status_code=303)
-    try:
-        data = serializer.loads(cookie)
-        username = data.get("user")
-        if username != APP_USER:
-            return RedirectResponse(url="/login", status_code=303)
-        return username
-    except Exception:
-        return RedirectResponse(url="/login", status_code=303)
+        raise HTTPException(status_code=303, headers={"Location": "/login"})
+    username = verify_token(cookie)
+    if username != APP_USER:
+        raise HTTPException(status_code=303, headers={"Location": "/login"})
+    return username
 
+
+# --- Routes ---
 @app.get("/login", response_class=HTMLResponse)
 def login_page():
     return HTMLResponse("""
@@ -93,40 +104,88 @@ def login_page():
     </html>
     """)
 
+
 @app.post("/login")
 def do_login(response: Response, username: str = Form(...), password: str = Form(...)):
     if username == APP_USER and password == APP_PASS:
-        token = serializer.dumps({"user": username})
-        response = RedirectResponse(url="/", status_code=303)
-        response.set_cookie(COOKIE_NAME, token, httponly=True, secure=True, samesite="Lax")
-        return response
+        token = create_token(username)
+        res = RedirectResponse(url="/", status_code=303)
+        res.set_cookie(COOKIE_NAME, token, httponly=True, max_age=86400, samesite="Lax")
+        return res
     return HTMLResponse("<h3>Login failed</h3><a href='/login'>Try again</a>", status_code=401)
+
 
 @app.get("/", response_class=HTMLResponse)
 def home(user: str = Depends(get_current_user)):
-    # serve index.html file if exists, else simple UI
-    if os.path.exists("index.html"):
-        return FileResponse("index.html")
-    return HTMLResponse(f"<h3>Welcome {user}</h3><p>UI not found</p>")
+    return HTMLResponse(f"""
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body {{
+          font-family: sans-serif;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          height: 100vh;
+          background: #e8eef2;
+        }}
+        h2 {{
+          margin-bottom: 40px;
+        }}
+        button {{
+          width: 200px;
+          padding: 20px;
+          margin: 15px;
+          font-size: 22px;
+          border: none;
+          border-radius: 10px;
+          cursor: pointer;
+          color: white;
+          transition: 0.2s;
+        }}
+        .open {{ background: #28a745; }}
+        .stop {{ background: #ffc107; color: black; }}
+        .close {{ background: #dc3545; }}
+        button:hover {{ opacity: 0.85; }}
+      </style>
+    </head>
+    <body>
+      <h2>Điều khiển I/O</h2>
+      <button class="open" onclick="sendCmd('open')">Mở</button>
+      <button class="stop" onclick="sendCmd('stop')">Dừng</button>
+      <button class="close" onclick="sendCmd('close')">Đóng</button>
+
+      <script>
+        async function sendCmd(cmd) {{
+          await fetch('/action/' + cmd, {{ method: 'POST' }});
+          alert('Đã gửi lệnh: ' + cmd);
+        }}
+      </script>
+    </body>
+    </html>
+    """)
+
 
 @app.post("/action/{cmd}")
 def control(cmd: str, user: str = Depends(get_current_user)):
     global last_command
     last_command = cmd
     print(f"[WEB] User {user} sent command: {cmd}")
-    return {"status":"ok","cmd":cmd}
+    return {"status": "ok", "cmd": cmd}
+
 
 @app.get("/get_cmd")
 def get_cmd():
-    # ESP can poll this without auth (or you can protect it if needed)
     global last_command
     cmd = last_command
     last_command = None
     return {"command": cmd or ""}
 
-# optional logout
+
 @app.get("/logout")
 def logout(response: Response):
-    response = RedirectResponse(url="/login", status_code=303)
-    response.delete_cookie(COOKIE_NAME)
-    return response
+    res = RedirectResponse(url="/login", status_code=303)
+    res.delete_cookie(COOKIE_NAME)
+    return res
