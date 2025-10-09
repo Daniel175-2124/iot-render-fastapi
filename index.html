@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Điều khiển I/O</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; margin-top: 50px; }
+    button {
+      font-size: 24px;
+      padding: 15px 30px;
+      margin: 10px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+    }
+    .mo { background-color: #4CAF50; color: white; }
+    .dung { background-color: #ff9800; color: white; }
+    .dong { background-color: #f44336; color: white; }
+  </style>
+</head>
+<body>
+  <h2>🛰️ Điều khiển thiết bị ESP8266</h2>
+  <button class="mo" onclick="send('mo')">Mở</button>
+  <button class="dung" onclick="send('dung')">Dừng</button>
+  <button class="dong" onclick="send('dong')">Đóng</button>
+
+  <script>
+    async function send(cmd) {
+      const res = await fetch(`/action/${cmd}`, { method: 'POST' });
+      const data = await res.json();
+      alert(`Đã gửi lệnh: ${data.command}`);
+    }
+  </script>
+</body>
+</html>
