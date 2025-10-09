@@ -36,14 +36,61 @@ def get_current_user(request: Request):
 @app.get("/login", response_class=HTMLResponse)
 def login_page():
     return HTMLResponse("""
-    <html><body style="font-family:sans-serif">
-      <h3>Đăng nhập</h3>
-      <form method="post" action="/login">
-        <input name="username" placeholder="username"/><br/><br/>
-        <input name="password" type="password" placeholder="password"/><br/><br/>
-        <button type="submit">Đăng nhập</button>
-      </form>
-    </body></html>
+    <html>
+    <head>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body {
+          font-family: sans-serif;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 100vh;
+          background: #f3f4f6;
+        }
+        .login-box {
+          background: white;
+          padding: 40px 50px;
+          border-radius: 15px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+          text-align: center;
+          width: 90%;
+          max-width: 400px;
+        }
+        input {
+          width: 90%;
+          padding: 12px;
+          margin: 10px 0;
+          border: 1px solid #ccc;
+          border-radius: 8px;
+          font-size: 16px;
+        }
+        button {
+          width: 95%;
+          padding: 12px;
+          background-color: #007BFF;
+          border: none;
+          color: white;
+          font-size: 18px;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+        button:hover {
+          background-color: #0056b3;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="login-box">
+        <h2>Đăng nhập</h2>
+        <form method="post" action="/login">
+          <input name="username" placeholder="Tên đăng nhập" required/><br/>
+          <input name="password" type="password" placeholder="Mật khẩu" required/><br/>
+          <button type="submit">Đăng nhập</button>
+        </form>
+      </div>
+    </body>
+    </html>
     """)
 
 @app.post("/login")
