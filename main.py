@@ -150,3 +150,11 @@ def get_status(device: str):
             t = datetime.fromisoformat(s["last_seen"])
             online = (datetime.utcnow() - t) < timedelta(seconds=15)
         except Exception:
+            online = False
+    return {"io": s.get("io", {}), "led": s.get("led", {}), "last_seen": s.get("last_seen"), "online": online}
+
+
+# Simple health check
+@app.get("/health")
+def health():
+    return {"ok": True}
