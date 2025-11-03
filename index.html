@@ -1,59 +1,101 @@
-<!DOCTYPE html>
+<!-- index.html -->
+<!doctype html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Điều khiển I/O</title>
   <style>
-    body {
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background: #f8f9fa;
-    }
-    h1 {
-      color: #333;
-      margin-bottom: 40px;
-    }
-    button {
-      width: 80%;
-      max-width: 300px;
-      padding: 20px;
-      margin: 15px 0;
-      font-size: 22px;
-      border: none;
-      border-radius: 12px;
-      color: white;
-      background-color: #007bff;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    button:hover {
-      background-color: #0056b3;
-      transform: scale(1.05);
-    }
-    .close { background-color: #28a745; }
-    .stop { background-color: #ffc107; color: #222; }
-    .open { background-color: #dc3545; }
+    body{font-family:sans-serif;background:#f4f7fb;margin:0;padding:20px;display:flex;flex-direction:column;align-items:center}
+    h1{color:#222}
+    .grid{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+    .card{background:white;padding:18px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.06);width:340px}
+    .controls button{margin:6px;padding:10px 12px;border:none;border-radius:8px;color:#fff;cursor:pointer}
+    .open{background:#28a745}.stop{background:#ffc107;color:#222}.close{background:#dc3545}
+    .on{background:#007bff}.off{background:#6c757d}
+    input[type=number]{width:80px;padding:8px;border-radius:6px;border:1px solid #ccc}
+    .status{margin-top:8px;font-size:14px}
+    .top-right{position:fixed;right:18px;top:12px}
+    .logout{background:#dc3545;color:#fff;padding:8px 12px;border-radius:8px;text-decoration:none}
   </style>
 </head>
 <body>
-  <h1>Điều khiển</h1>
-  <button class="open" onclick="sendCmd('MO')">MỞ</button>
-  <button class="stop" onclick="sendCmd('DUNG')">DỪNG</button>
-  <button class="close" onclick="sendCmd('DONG')">ĐÓNG</button>
+  <div class="top-right"><a class="logout" href="/logout">Đăng xuất</a></div>
+  <h1>Điều khiển I/O</h1>
+
+  <div class="grid">
+    <!-- ESP1 -->
+    <div class="card">
+      <h3>ESP1</h3>
+      <div class="controls">
+        <button class="open" onclick="sendCmd('esp1','OPEN')">MỞ</button>
+        <button class="stop" onclick="sendCmd('esp1','STOP')">DỪNG</button>
+        <button class="close" onclick="sendCmd('esp1','CLOSE')">ĐÓNG</button>
+      </div>
+      <div class="status" id="esp1-status">Trạng thái: -</div>
+    </div>
+
+    <!-- ESP2 -->
+    <div class="card">
+      <h3>ESP2 - 2 thiết bị</h3>
+      <div>
+        <strong>Thiết bị 1</strong><br/>
+        <button class="on" onclick="sendCmd('esp2','ON1')">BẬT</button>
+        <button class="off" onclick="sendCmd('esp2','OFF1')">TẮT</button>
+        <input id="time1" type="number" min="1" placeholder="phút">
+        <button onclick="setTimer(1)">Cập nhật</button>
+        <div id="state1" class="status">Trạng thái: -</div>
+      </div>
+      <hr/>
+      <div>
+        <strong>Thiết bị 2</strong><br/>
+        <button class="on" onclick="sendCmd('esp2','ON2')">BẬT</button>
+        <button class="off" onclick="sendCmd('esp2','OFF2')">TẮT</button>
+        <input id="time2" type="number" min="1" placeholder="phút">
+        <button onclick="setTimer(2)">Cập nhật</button>
+        <div id="state2" class="status">Trạng thái: -</div>
+      </div>
+    </div>
+  </div>
 
   <script>
-    async function sendCmd(cmd) {
-      const res = await fetch(`/action/${cmd}`, {method:'POST'});
-      const data = await res.json();
-      alert("Đã gửi lệnh: " + cmd);
+    async function sendCmd(device, cmd) {
+      const res = await fetch('/action/' + device + '/' + encodeURIComponent(cmd), { method:'POST' });
+      if (!res.ok) {
+        alert('Lỗi: ' + res.status);
+      } else {
+        console.log('sent', device, cmd);
+      }
     }
+
+    async function setTimer(n) {
+      const v = document.getElementById('time' + n).value;
+      if (!v || v <= 0) { alert('Nhập phút hợp lệ'); return; }
+      // timer command format: TIMER<n>:<minutes>  (ESP will parse)
+      await sendCmd('esp2', 'TIMER' + n + ':' + v);
+    }
+
+    async function updateUI() {
+      try {
+        // esp1
+        const r1 = await fetch('/status/esp1'); const j1 = await r1.json();
+        document.getElementById('esp1-status').innerText = 'Trạng thái: ' + JSON.stringify(j1.io) + (j1.online ? ' (online)' : ' (offline)');
+        // esp2
+        const r2 = await fetch('/status/esp2'); const j2 = await r2.json();
+        if (j2.io) {
+          const dev1 = j2.io.dev1 ? 'BẬT' : 'TẮT';
+          const dev2 = j2.io.dev2 ? 'BẬT' : 'TẮT';
+          const t1 = j2.io.t1 !== undefined ? j2.io.t1 : '-';
+          const t2 = j2.io.t2 !== undefined ? j2.io.t2 : '-';
+          document.getElementById('state1').innerText = `Trạng thái: ${dev1}, còn ${t1}p`;
+          document.getElementById('state2').innerText = `Trạng thái: ${dev2}, còn ${t2}p`;
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setInterval(updateUI, 5000);
+    updateUI();
   </script>
 </body>
 </html>
