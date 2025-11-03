@@ -2,6 +2,8 @@ fastapi
 uvicorn
 gunicorn
 itsdangerous
+requests
+starlette
 python-multipart
 
 
