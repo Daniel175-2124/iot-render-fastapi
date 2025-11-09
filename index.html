@@ -101,7 +101,7 @@
   <h1>Điều khiển I/O</h1>
 
   <div class="grid">
-    <!-- ESP1 -->
+    <!-- ESP1 Cửa Cuốn -->
     <div class="card">
       <h3>ESP1</h3>
       <div class="controls">
@@ -114,9 +114,9 @@
 
     <!-- ESP2 -->
     <div class="card">
-      <h3>ESP2 - 2 thiết bị</h3>
+      <h3>ESP2 - Bình Nóng Lạnh</h3>
       <div>
-        <strong>Thiết bị 1</strong><br/>
+        <strong>Tầng 1</strong><br/>
         <button class="on" onclick="sendCmd('esp2','ON1')">BẬT</button>
         <button class="off" onclick="sendCmd('esp2','OFF1')">TẮT</button>
         <input id="time1" type="number" min="1" placeholder="phút">
@@ -125,7 +125,7 @@
       </div>
       <hr/>
       <div>
-        <strong>Thiết bị 2</strong><br/>
+        <strong>Tầng 2</strong><br/>
         <button class="on" onclick="sendCmd('esp2','ON2')">BẬT</button>
         <button class="off" onclick="sendCmd('esp2','OFF2')">TẮT</button>
         <input id="time2" type="number" min="1" placeholder="phút">
@@ -164,22 +164,21 @@
           const dev2 = j2.io.dev2 ? 'BẬT' : 'TẮT';
           const t1 = j2.io.t1 !== undefined ? j2.io.t1 : '-';
           const t2 = j2.io.t2 !== undefined ? j2.io.t2 : '-';
-          document.getElementById('state1').innerText = `Trạng thái: ${dev1}, còn ${t1}p`;
-          document.getElementById('state2').innerText = `Trạng thái: ${dev2}, còn ${t2}p`;
+          document.getElementById('state1').innerHTML =
+            `<span class="status ${j2.io.dev1 ? 'on' : 'off'}">
+               Trạng thái: ${j2.io.dev1 ? 'BẬT' : 'TẮT'}
+             </span><div class="status timer">Còn ${t1}p</div>`;
+      
+          document.getElementById('state2').innerHTML =
+            `<span class="status ${j2.io.dev2 ? 'on' : 'off'}">
+               Trạng thái: ${j2.io.dev2 ? 'BẬT' : 'TẮT'}
+             </span><div class="status timer">Còn ${t2}p</div>`;
         }
       } catch (e) {
         console.error(e);
       }
     }
-    document.getElementById('state1').innerHTML =
-      `<span class="status ${j2.io.dev1 ? 'on' : 'off'}">
-         Trạng thái: ${j2.io.dev1 ? 'BẬT' : 'TẮT'}
-       </span><div class="status timer">Còn ${t1}p</div>`;
-
-    document.getElementById('state2').innerHTML =
-      `<span class="status ${j2.io.dev2 ? 'on' : 'off'}">
-         Trạng thái: ${j2.io.dev2 ? 'BẬT' : 'TẮT'}
-       </span><div class="status timer">Còn ${t2}p</div>`;
+    
 
     setInterval(updateUI, 5000);
     updateUI();
